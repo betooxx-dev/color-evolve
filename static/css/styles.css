@@ -1,0 +1,109 @@
+/* Estilos para la interfaz de ColorEvolve */
+
+/* Paletas en la tabla */
+.palette-colors {
+  display: flex;
+  gap: 8px;
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  cursor: pointer;
+}
+
+/* Previsualización de interfaz */
+.palette-preview {
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.interface-mockup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.mockup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  color: white;
+}
+
+.mockup-logo {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.mockup-nav {
+  display: flex;
+  gap: 20px;
+}
+
+.mockup-nav span {
+  cursor: pointer;
+}
+
+.mockup-content {
+  flex: 1;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.mockup-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.mockup-text {
+  margin-bottom: 20px;
+}
+
+.mockup-button {
+  align-self: flex-start;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* Información de colores */
+.colors-info {
+  display: flex;
+  justify-content: space-around;
+  padding: 15px;
+  border-top: 1px solid #dee2e6;
+}
+
+.color-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.color-info-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #dee2e6;
+}
+
+.color-info-label {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.color-info-hex {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #666;
+}

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ColorEvolve - Generador de Paletas Accesibles</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container py-4">
+      <header class="mb-4 text-center">
+        <h1>ColorEvolve</h1>
+        <p class="lead">Generador evolutivo de paletas de colores accesibles</p>
+      </header>
+
+      <div class="row">
+        <!-- Panel de configuración -->
+        <div class="col-md-4">
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">Configuración</h5>
+            </div>
+            <div class="card-body">
+              <form id="generate-form">
+                <div class="mb-3">
+                  <label for="base-color" class="form-label"
+                    >Color primario de marca:</label
+                  >
+                  <div class="input-group">
+                    <input
+                      type="color"
+                      class="form-control form-control-color"
+                      id="base-color"
+                      name="base_color"
+                      value="#3A5FCD"
+                    />
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="hex-value"
+                      value="#3A5FCD"
+                    />
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Nivel de accesibilidad WCAG:</label>
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      name="wcag_level"
+                      id="wcag-aa"
+                      value="AA"
+                      checked
+                    />
+                    <label class="form-check-label" for="wcag-aa">
+                      AA (Contraste ≥ 4.5:1)
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      name="wcag_level"
+                      id="wcag-aaa"
+                      value="AAA"
+                    />
+                    <label class="form-check-label" for="wcag-aaa">
+                      AAA (Contraste ≥ 7:1)
+                    </label>
+                  </div>
+                </div>
+
+                <hr />
+                <h6>Parámetros de evolución</h6>
+
+                <div class="mb-3">
+                  <label for="population-size" class="form-label"
+                    >Tamaño de población:</label
+                  >
+                  <input
+                    type="range"
+                    class="form-range"
+                    id="population-size"
+                    name="population_size"
+                    min="20"
+                    max="100"
+                    value="50"
+                  />
+                  <div class="text-end">
+                    <span id="population-value">50</span> individuos
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="generations" class="form-label"
+                    >Número de generaciones:</label
+                  >
+                  <input
+                    type="range"
+                    class="form-range"
+                    id="generations"
+                    name="generations"
+                    min="10"
+                    max="50"
+                    value="20"
+                  />
+                  <div class="text-end">
+                    <span id="generations-value">20</span> generaciones
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="mutation-prob" class="form-label"
+                    >Probabilidad de mutación:</label
+                  >
+                  <input
+                    type="range"
+                    class="form-range"
+                    id="mutation-prob"
+                    name="mutation_prob"
+                    min="5"
+                    max="30"
+                    value="15"
+                  />
+                  <div class="text-end">
+                    <span id="mutation-value">15</span>%
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="accessibility-weight" class="form-label"
+                    >Balance accesibilidad/estética:</label
+                  >
+                  <input
+                    type="range"
+                    class="form-range"
+                    id="accessibility-weight"
+                    name="accessibility_weight"
+                    min="50"
+                    max="90"
+                    value="70"
+                  />
+                  <div class="text-end">
+                    <span id="access-value">70</span>% /
+                    <span id="aesthetic-value">30</span>%
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  class="btn btn-primary w-100 mt-3"
+                  id="generate-btn"
+                >
+                  Generar paletas
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel de resultados -->
+        <div class="col-md-8">
+          <div id="results-container" style="display: none">
+            <div class="card mb-4">
+              <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Mejores paletas generadas</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover" id="palettes-table">
+                    <thead>
+                      <tr>
+                        <th width="40%">Paleta</th>
+                        <th>Contraste</th>
+                        <th>Delta-E</th>
+                        <th>Daltonismo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- Se llenará con JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Previsualización</h5>
+              </div>
+              <div class="card-body p-0">
+                <div id="palette-preview" class="palette-preview">
+                  <!-- Se llenará con JavaScript -->
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Evolución del algoritmo</h5>
+              </div>
+              <div class="card-body">
+                <img
+                  id="convergence-chart"
+                  class="img-fluid"
+                  src=""
+                  alt="Gráfico de convergencia"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div id="loading" class="text-center my-5 py-5" style="display: none">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Generando paletas...</span>
+            </div>
+            <p class="mt-3">
+              Generando paletas accesibles mediante algoritmo genético...
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>
