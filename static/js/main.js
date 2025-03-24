@@ -206,4 +206,123 @@ document.addEventListener("DOMContentLoaded", function () {
 
     palettePreview.appendChild(colorsInfo);
   }
+
+  // Funcionalidad para extraer color de URL
+  document
+    .getElementById("extract-from-url")
+    .addEventListener("click", function () {
+      const url = document.getElementById("site-url").value;
+      if (!url) {
+        alert("Por favor, introduce una URL válida");
+        return;
+      }
+
+      // Mostrar indicador de carga
+      const spinner = document.getElementById("url-spinner");
+      const button = this;
+
+      spinner.classList.remove("d-none");
+      button.disabled = true;
+
+      fetch("/extract-color", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          url: url,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            alert("Error: " + data.error);
+          } else {
+            // Actualizar el selector de color y el campo de texto
+            document.getElementById("base-color").value = data.color;
+            document.getElementById("hex-value").value = data.color;
+
+            // Mostrar una previsualización
+            const preview = document.getElementById("url-result-preview");
+            preview.innerHTML = `
+        <div class="d-flex align-items-center">
+          <div style="width: 24px; height: 24px; background-color: ${data.color}; border-radius: 4px; border: 1px solid #dee2e6;"></div>
+          <span class="ms-2">${data.color}</span>
+        </div>
+      `;
+          }
+        })
+        .catch((error) => {
+          alert("Error: " + error.message);
+        })
+        .finally(() => {
+          // Restaurar botón
+          spinner.classList.add("d-none");
+          button.disabled = false;
+        });
+    });
+
+  // Funcionalidad para extraer color de HTML
+  document
+    .getElementById("extract-from-html")
+    .addEventListener("click", function () {
+      const html = document.getElementById("html-code").value;
+      if (!html) {
+        alert("Por favor, introduce código HTML");
+        return;
+      }
+
+      // Mostrar indicador de carga
+      const spinner = document.getElementById("html-spinner");
+      const button = this;
+
+      spinner.classList.remove("d-none");
+      button.disabled = true;
+
+      fetch("/extract-color", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          html: html,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            alert("Error: " + data.error);
+          } else {
+            // Actualizar el selector de color y el campo de texto
+            document.getElementById("base-color").value = data.color;
+            document.getElementById("hex-value").value = data.color;
+
+            // Mostrar una previsualización
+            const preview = document.getElementById("html-result-preview");
+            preview.innerHTML = `
+        <div class="d-flex align-items-center">
+          <div style="width: 24px; height: 24px; background-color: ${data.color}; border-radius: 4px; border: 1px solid #dee2e6;"></div>
+          <span class="ms-2">${data.color}</span>
+        </div>
+      `;
+          }
+        })
+        .catch((error) => {
+          alert("Error: " + error.message);
+        })
+        .finally(() => {
+          // Restaurar botón
+          spinner.classList.add("d-none");
+          button.disabled = false;
+        });
+    });
+
+  // Asegurar que el color seleccionado se mantiene al cambiar de tab
+  document.querySelectorAll("#colorSourceTabs button").forEach((button) => {
+    button.addEventListener("shown.bs.tab", function (e) {
+      // Al cambiar de tab, asegurar que el valor del color base se mantiene sincronizado
+      const currentColor = document.getElementById("hex-value").value;
+      document.getElementById("base-color").value = currentColor;
+    });
+  });
 });

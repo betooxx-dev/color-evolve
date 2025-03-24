@@ -33,20 +33,145 @@
                   <label for="base-color" class="form-label"
                     >Color primario de marca:</label
                   >
-                  <div class="input-group">
-                    <input
-                      type="color"
-                      class="form-control form-control-color"
-                      id="base-color"
-                      name="base_color"
-                      value="#3A5FCD"
-                    />
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="hex-value"
-                      value="#3A5FCD"
-                    />
+                  <ul class="nav nav-tabs" id="colorSourceTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                      <button
+                        class="nav-link active"
+                        id="manual-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#manual"
+                        type="button"
+                        role="tab"
+                        aria-controls="manual"
+                        aria-selected="true"
+                      >
+                        Manual
+                      </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                      <button
+                        class="nav-link"
+                        id="url-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#url"
+                        type="button"
+                        role="tab"
+                        aria-controls="url"
+                        aria-selected="false"
+                      >
+                        URL
+                      </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                      <button
+                        class="nav-link"
+                        id="html-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#html"
+                        type="button"
+                        role="tab"
+                        aria-controls="html"
+                        aria-selected="false"
+                      >
+                        HTML
+                      </button>
+                    </li>
+                  </ul>
+
+                  <div class="tab-content mt-2" id="colorSourceContent">
+                    <!-- Selección manual de color -->
+                    <div
+                      class="tab-pane fade show active"
+                      id="manual"
+                      role="tabpanel"
+                      aria-labelledby="manual-tab"
+                    >
+                      <div class="input-group">
+                        <input
+                          type="color"
+                          class="form-control form-control-color"
+                          id="base-color"
+                          name="base_color"
+                          value="#3A5FCD"
+                        />
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="hex-value"
+                          value="#3A5FCD"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Extracción desde URL -->
+                    <div
+                      class="tab-pane fade"
+                      id="url"
+                      role="tabpanel"
+                      aria-labelledby="url-tab"
+                    >
+                      <div class="mb-2">
+                        <input
+                          type="url"
+                          class="form-control"
+                          id="site-url"
+                          placeholder="https://example.com"
+                        />
+                      </div>
+                      <div class="d-flex align-items-center">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-secondary"
+                          id="extract-from-url"
+                        >
+                          <span
+                            class="spinner-border spinner-border-sm d-none"
+                            id="url-spinner"
+                            role="status"
+                            aria-hidden="true"
+                          ></span>
+                          Extraer color
+                        </button>
+                        <div class="ms-2" id="url-result-preview">
+                          <!-- Aquí se mostrará el color extraído -->
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Extracción desde HTML -->
+                    <div
+                      class="tab-pane fade"
+                      id="html"
+                      role="tabpanel"
+                      aria-labelledby="html-tab"
+                    >
+                      <div class="mb-2">
+                        <textarea
+                          class="form-control"
+                          id="html-code"
+                          rows="3"
+                          placeholder="<html>...</html>"
+                        ></textarea>
+                      </div>
+                      <div class="d-flex align-items-center">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-secondary"
+                          id="extract-from-html"
+                        >
+                          <span
+                            class="spinner-border spinner-border-sm d-none"
+                            id="html-spinner"
+                            role="status"
+                            aria-hidden="true"
+                          ></span>
+                          Extraer color
+                        </button>
+                        <div class="ms-2" id="html-result-preview">
+                          <!-- Aquí se mostrará el color extraído -->
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

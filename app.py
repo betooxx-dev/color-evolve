@@ -6,6 +6,7 @@ import numpy as np
 import base64
 from io import BytesIO
 import json
+from models.color_extractor import ColorExtractor
 
 from models.genetic_algorithm import ColorPaletteGA
 
@@ -68,6 +69,25 @@ def generate():
         'palettes': best_palettes,
         'convergence_chart': convergence_img
     })
+
+@app.route('/extract-color', methods=['POST'])
+def extract_color():
+    """Extrae el color principal de un HTML o URL"""
+    extractor = ColorExtractor()
+    
+    try:
+        if 'html' in request.form and request.form['html'].strip():
+            html_content = request.form['html']
+            main_color = extractor.extract_from_html(html_content)
+        elif 'url' in request.form and request.form['url'].strip():
+            url = request.form['url']
+            main_color = extractor.extract_from_url(url)
+        else:
+            return jsonify({'error': 'Se requiere HTML o URL válida'}), 400
+        
+        return jsonify({'color': main_color})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
