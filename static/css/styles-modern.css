@@ -1,0 +1,450 @@
+/* === ESTILOS MODERNOS PARA COLOREVOLVE === */
+
+:root {
+  --primary-color: #4361ee;
+  --primary-dark: #3a56d4;
+  --secondary-color: #48bfe3;
+  --success-color: #06d6a0;
+  --warning-color: #ffd166;
+  --danger-color: #ef476f;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #6c757d;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+  --border-radius: 12px;
+  --box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  --transition: all 0.3s ease;
+}
+
+/* === ESTILOS GENERALES === */
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #f6f8fc;
+  color: var(--gray-800);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  padding: 2rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.card {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.card:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.25rem 1.5rem;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.6rem 1.2rem;
+  transition: var(--transition);
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--gray-200);
+  border-color: var(--gray-200);
+  color: var(--gray-800);
+}
+
+.btn-secondary:hover {
+  background-color: var(--gray-300);
+  border-color: var(--gray-300);
+  color: var(--gray-800);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Ajuste para input de tipo color */
+input[type="color"] {
+  height: 38px;
+  padding: 2px;
+  width: 50px;
+  border-radius: 8px 0 0 8px;
+  border: 1px solid var(--gray-300);
+  cursor: pointer;
+}
+
+input[type="text"] {
+  border-radius: 0 8px 8px 0;
+  border: 1px solid var(--gray-300);
+}
+
+.form-control:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.15);
+  border-color: var(--primary-color);
+}
+
+/* Sliders personalizados */
+.form-range {
+  height: 0.5rem;
+}
+
+.form-range::-webkit-slider-thumb {
+  background-color: var(--primary-color);
+  width: 16px;
+  height: 16px;
+}
+
+.form-range::-moz-range-thumb {
+  background-color: var(--primary-color);
+  width: 16px;
+  height: 16px;
+}
+
+/* === HEADER === */
+header {
+  margin-bottom: 2.5rem;
+}
+
+header h1 {
+  color: var(--primary-color);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.lead {
+  color: var(--gray-600);
+  font-weight: 400;
+}
+
+/* === PALETAS EN LA TABLA === */
+.palette-colors {
+  display: flex;
+  gap: 8px;
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 2px solid white;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.color-swatch:hover {
+  transform: scale(1.15);
+}
+
+.table {
+  --bs-table-hover-bg: rgba(67, 97, 238, 0.05);
+}
+
+.table > tbody > tr {
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.table-active {
+  background-color: rgba(67, 97, 238, 0.05) !important;
+  border-left: 3px solid var(--primary-color);
+}
+
+/* === PREVISUALIZACIÓN DE INTERFAZ === */
+.palette-preview {
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+  background-color: var(--gray-100);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.interface-mockup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.mockup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  color: white;
+}
+
+.mockup-logo {
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.5px;
+}
+
+.mockup-nav {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.mockup-nav span {
+  cursor: pointer;
+  position: relative;
+  padding: 0.25rem 0;
+}
+
+.mockup-nav span:hover {
+  opacity: 0.85;
+}
+
+.mockup-nav span::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 2px;
+  background-color: currentColor;
+  transition: width 0.3s ease;
+}
+
+.mockup-nav span:hover::after {
+  width: 100%;
+}
+
+.mockup-content {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mockup-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.mockup-text {
+  margin-bottom: 1.5rem;
+  max-width: 540px;
+}
+
+.mockup-button {
+  align-self: flex-start;
+  padding: 0.65rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s ease;
+}
+
+.mockup-button:hover {
+  opacity: 0.9;
+}
+
+/* === INFORMACIÓN DE COLORES === */
+.colors-info {
+  display: flex;
+  justify-content: space-around;
+  padding: 1.25rem;
+  background: white;
+  border-top: 1px solid var(--gray-200);
+}
+
+.color-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.color-info-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.color-info-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--gray-700);
+}
+
+.color-info-hex {
+  font-family: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo,
+    monospace;
+  font-size: 0.8rem;
+  color: var(--gray-600);
+  background: var(--gray-100);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Comparación de colores */
+.color-comparison {
+  display: flex !important;
+  align-items: center;
+  margin-top: 0.5rem;
+  gap: 0.25rem;
+}
+
+.color-comparison div {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* === INDICADOR DE CARGA === */
+#loading {
+  padding: 4rem 0;
+}
+
+#loading .spinner-border {
+  width: 3.5rem;
+  height: 3.5rem;
+  color: var(--primary-color);
+}
+
+/* === MODAL DE EXTRACCIÓN DE COLORES === */
+.modal-content {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--gray-200);
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--gray-200);
+  padding: 1.25rem 1.5rem;
+}
+
+.nav-tabs {
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.nav-tabs .nav-link {
+  color: var(--gray-600);
+  padding: 0.75rem 1rem;
+  border: none;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--primary-color);
+  background: transparent;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+/* Colores extraídos */
+#extracted-colors-container {
+  background-color: var(--gray-100);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+#extracted-colors-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.extracted-color {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 992px) {
+  .container {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .card-header,
+  .card-body {
+    padding: 1.25rem;
+  }
+
+  #extracted-colors-preview {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  header h1 {
+    font-size: 1.75rem;
+  }
+
+  .mockup-content {
+    padding: 1.5rem;
+  }
+
+  .colors-info {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .color-info {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+  }
+}

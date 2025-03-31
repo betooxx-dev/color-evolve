@@ -20,22 +20,29 @@ def index():
 @app.route('/generate', methods=['POST'])
 def generate():
     """Genera paletas de colores basadas en parámetros"""
-    # Obtener parámetros del formulario
-    base_color = request.form.get('base_color', '#3A5FCD')
+    # Obtener colores iniciales del formulario
+    primary_color = request.form.get('primary_color', '#3A5FCD')
+    bg_color = request.form.get('bg_color', '#FFFFFF')
+    accent_color = request.form.get('accent_color', '#F08080')
+    
+    # Parámetros adicionales
     wcag_level = request.form.get('wcag_level', 'AA')
     population_size = int(request.form.get('population_size', 50))
     generations = int(request.form.get('generations', 20))
     mutation_prob = float(request.form.get('mutation_prob', 15)) / 100
     accessibility_weight = float(request.form.get('accessibility_weight', 70)) / 100
+    initial_weight = float(request.form.get('initial_weight', 30)) / 100
     
-    # Crear y ejecutar algoritmo genético
+    # Crear y ejecutar algoritmo genético con los tres colores
+    initial_colors = [primary_color, bg_color, accent_color]
     ga = ColorPaletteGA(
-        base_color=base_color,
+        initial_colors=initial_colors,
         wcag_level=wcag_level,
         population_size=population_size,
         generations=generations,
         mutation_prob=mutation_prob,
-        accessibility_weight=accessibility_weight
+        accessibility_weight=accessibility_weight,
+        initial_weight=initial_weight
     )
     
     hof, log = ga.run()
@@ -65,27 +72,34 @@ def generate():
     convergence_img = base64.b64encode(buffer1.getvalue()).decode()
     plt.close(fig1)
     
+    # También podemos enviar los colores iniciales para compararlos
     return jsonify({
         'palettes': best_palettes,
-        'convergence_chart': convergence_img
+        'convergence_chart': convergence_img,
+        'initial_colors': initial_colors
     })
 
 @app.route('/extract-color', methods=['POST'])
 def extract_color():
-    """Extrae el color principal de un HTML o URL"""
+    """Extrae los colores principales de un HTML o URL"""
     extractor = ColorExtractor()
     
     try:
         if 'html' in request.form and request.form['html'].strip():
             html_content = request.form['html']
-            main_color = extractor.extract_from_html(html_content)
+            colors = extractor.extract_from_html(html_content)
         elif 'url' in request.form and request.form['url'].strip():
             url = request.form['url']
-            main_color = extractor.extract_from_url(url)
+            colors = extractor.extract_from_url(url)
         else:
             return jsonify({'error': 'Se requiere HTML o URL válida'}), 400
         
-        return jsonify({'color': main_color})
+        # Devolvemos los tres colores
+        return jsonify({
+            'primary_color': colors[0],
+            'bg_color': colors[1],
+            'accent_color': colors[2]
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

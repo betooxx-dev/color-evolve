@@ -9,7 +9,7 @@ from colormath.color_objects import sRGBColor, LabColor
 from colormath.color_conversions import convert_color
 
 class ColorExtractor:
-    """Clase para extraer el color principal de HTML"""
+    """Clase para extraer los tres colores principales de HTML"""
     
     def __init__(self):
         # Patrones regex para diferentes formatos de color
@@ -26,8 +26,20 @@ class ColorExtractor:
             ".main-color", "#primary-color"                   # Elementos con nombres sugestivos
         ]
         
+        # Selectores para colores de fondo
+        self.background_selectors = [
+            "body", ".bg", "#background", ".background",
+            ".container", "main", "#main", ".main-content"
+        ]
+        
+        # Selectores para colores de acento
+        self.accent_selectors = [
+            ".accent", "#accent", ".secondary", "#secondary",
+            ".btn-secondary", ".accent-color", ".highlight"
+        ]
+        
     def extract_from_url(self, url):
-        """Extrae el color principal desde una URL"""
+        """Extrae tres colores principales desde una URL"""
         try:
             response = requests.get(url)
             html_content = response.text
@@ -36,27 +48,56 @@ class ColorExtractor:
             raise Exception(f"Error al obtener HTML desde URL: {str(e)}")
     
     def extract_from_html(self, html_content):
-        """Método principal para extraer color de HTML"""
-        # 1. Intenta encontrar color en elementos prominentes
-        prominence_color = self._extract_by_prominence(html_content)
-        if prominence_color:
-            return prominence_color
-            
-        # 2. Extrae todos los colores y analiza por frecuencia y clustering
+        """Método principal para extraer tres colores de HTML"""
+        # Extraer todos los colores del HTML
         all_colors = self._extract_all_colors(html_content)
         
-        if not all_colors:
-            return "#3A5FCD"  # Color por defecto si no se encuentra ninguno
+        if not all_colors or len(all_colors) < 3:
+            # Si no hay suficientes colores, usamos valores por defecto
+            return ["#3A5FCD", "#FFFFFF", "#F08080"]
+        
+        # 1. Intentar encontrar colores por roles específicos
+        primary = self._extract_by_prominence(html_content, self.prominent_selectors)
+        background = self._extract_by_prominence(html_content, self.background_selectors)
+        accent = self._extract_by_prominence(html_content, self.accent_selectors)
+        
+        # 2. Si no se encuentran por roles, usar clustering
+        if len(all_colors) >= 5:
+            clustered_colors = self._analyze_by_clustering(all_colors, n_clusters=5)
             
-        # 3. Intenta clustering para encontrar colores dominantes
-        if len(all_colors) > 5:
-            cluster_color = self._analyze_by_clustering(all_colors)
-            if cluster_color:
-                return cluster_color
-                
-        # 4. Recurre a análisis por frecuencia
-        frequency_color = self._analyze_by_frequency(all_colors)
-        return frequency_color or "#3A5FCD"  # Color por defecto
+            # Rellenar los que faltan con colores del clustering
+            if not primary and clustered_colors:
+                primary = clustered_colors[0]
+            
+            if not background and len(clustered_colors) > 1:
+                # Para fondo, buscar el color más claro
+                background = self._find_lightest_color(clustered_colors)
+            
+            if not accent and len(clustered_colors) > 2:
+                # Para acento, buscar un color que contraste con el fondo
+                accent = self._find_contrasting_color(background or "#FFFFFF", clustered_colors)
+        
+        # 3. Rellenar con análisis por frecuencia si es necesario
+        if not primary:
+            primary = self._analyze_by_frequency(all_colors) or "#3A5FCD"
+        
+        if not background:
+            # Buscar un color claro para el fondo
+            light_colors = [c for c in all_colors if self._is_light_color(c)]
+            if light_colors:
+                background = Counter(light_colors).most_common(1)[0][0]
+            else:
+                background = "#FFFFFF"  # Por defecto, fondo blanco
+        
+        if not accent:
+            # Excluir los colores ya seleccionados
+            remaining = [c for c in all_colors if c != primary and c != background]
+            if remaining:
+                accent = self._analyze_by_frequency(remaining) or "#F08080"
+            else:
+                accent = "#F08080"  # Por defecto, un rojo suave
+        
+        return [primary, background, accent]
     
     def _extract_all_colors(self, html_content):
         """Extrae todos los colores del documento HTML"""
@@ -110,11 +151,11 @@ class ColorExtractor:
         
         return colors
     
-    def _extract_by_prominence(self, html_content):
-        """Extrae colores de elementos prominentes"""
+    def _extract_by_prominence(self, html_content, selectors):
+        """Extrae colores de elementos prominentes según los selectores proporcionados"""
         soup = BeautifulSoup(html_content, 'html.parser')
         
-        for selector in self.prominent_selectors:
+        for selector in selectors:
             elements = soup.select(selector)
             if not elements:
                 continue
@@ -127,22 +168,47 @@ class ColorExtractor:
                     bg_match = re.search(r'background(-color)?:\s*([^;]+)', style)
                     color_match = re.search(r'color:\s*([^;]+)', style)
                     
-                    if bg_match:
+                    # Priorizar background-color si estamos buscando fondos
+                    if selectors == self.background_selectors and bg_match:
                         value = bg_match.group(2).strip()
-                        hex_matches = self.hex_pattern.search(value)
-                        rgb_matches = self.rgb_pattern.search(value)
+                    # Priorizar color para primario y acento
+                    elif color_match:
+                        value = color_match.group(1).strip()
+                    # Usar background como respaldo
+                    elif bg_match:
+                        value = bg_match.group(2).strip()
+                    else:
+                        continue
+                    
+                    hex_matches = self.hex_pattern.search(value)
+                    rgb_matches = self.rgb_pattern.search(value)
+                    
+                    if hex_matches:
+                        color = hex_matches.group(0).upper()
+                        if len(color) == 4:  # Convertir #ABC a #AABBCC
+                            color = '#' + ''.join([c*2 for c in color[1:]])
                         
-                        if hex_matches:
-                            color = hex_matches.group(0).upper()
-                            if len(color) == 4:  # Convertir #ABC a #AABBCC
-                                color = '#' + ''.join([c*2 for c in color[1:]])
-                            if not self._is_neutral_color(color):
-                                return color
-                        elif rgb_matches:
-                            r, g, b = map(int, rgb_matches.groups())
-                            color = f'#{r:02x}{g:02x}{b:02x}'.upper()
-                            if not self._is_neutral_color(color):
-                                return color
+                        # Para color primario y acento, evitar colores neutros
+                        if selectors != self.background_selectors and self._is_neutral_color(color):
+                            continue
+                            
+                        # Para fondo, evitar colores muy oscuros
+                        if selectors == self.background_selectors and self._is_too_dark(color):
+                            continue
+                            
+                        return color
+                    elif rgb_matches:
+                        r, g, b = map(int, rgb_matches.groups())
+                        color = f'#{r:02x}{g:02x}{b:02x}'.upper()
+                        
+                        # Filtros similares para RGB
+                        if selectors != self.background_selectors and self._is_neutral_color(color):
+                            continue
+                            
+                        if selectors == self.background_selectors and self._is_too_dark(color):
+                            continue
+                            
+                        return color
         
         return None  # No se encontró color en elementos prominentes
     
@@ -172,6 +238,8 @@ class ColorExtractor:
         
         # Convertir colores hex a RGB normalizados (0-1)
         rgb_colors = []
+        original_colors = []  # Para mantener la correspondencia con los colores originales
+        
         for hex_color in colors:
             hex_color = hex_color.lstrip('#')
             try:
@@ -179,6 +247,7 @@ class ColorExtractor:
                 # Verificar que es un color válido
                 if all(0 <= c <= 1 for c in rgb):
                     rgb_colors.append(rgb)
+                    original_colors.append(f'#{hex_color}'.upper())
             except (ValueError, IndexError):
                 continue  # Ignorar colores inválidos
         
@@ -220,16 +289,63 @@ class ColorExtractor:
             # Convertir centroide a hex
             hex_color = f'#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}{int(rgb[2]*255):02x}'.upper()
             
-            # No considerar colores neutros
-            if not self._is_neutral_color(hex_color):
-                centroid_features.append((hex_color, score))
+            centroid_features.append((hex_color, score))
         
-        if not centroid_features:
-            return None
-            
-        # Ordenar por score y devolver el mejor
+        # Ordenar por score
         centroid_features.sort(key=lambda x: x[1], reverse=True)
-        return centroid_features[0][0]
+        
+        # Devolver los colores hex de los centroides
+        return [color for color, _ in centroid_features]
+    
+    def _find_lightest_color(self, colors):
+        """Encuentra el color más claro de la lista"""
+        lightest = None
+        max_l = -1
+        
+        for color in colors:
+            try:
+                hex_color = color.lstrip('#')
+                r, g, b = tuple(int(hex_color[i:i+2], 16)/255 for i in (0, 2, 4))
+                rgb_obj = sRGBColor(r, g, b)
+                lab_obj = convert_color(rgb_obj, LabColor)
+                
+                if lab_obj.lab_l > max_l:
+                    max_l = lab_obj.lab_l
+                    lightest = color
+            except:
+                continue
+        
+        return lightest or "#FFFFFF"
+    
+    def _find_contrasting_color(self, bg_color, colors, min_contrast=4.5):
+        """Encuentra un color que contraste bien con el fondo"""
+        from models.accessibility import contrast_ratio
+        
+        bg_rgb = hex_to_rgb(bg_color)
+        
+        best_contrast = 0
+        best_color = None
+        
+        for color in colors:
+            if color == bg_color:
+                continue
+                
+            try:
+                color_rgb = hex_to_rgb(color)
+                contrast = contrast_ratio(bg_rgb, color_rgb)
+                
+                if contrast > best_contrast:
+                    best_contrast = contrast
+                    best_color = color
+            except:
+                continue
+        
+        # Si encontramos uno con buen contraste, lo devolvemos
+        if best_contrast >= min_contrast:
+            return best_color
+        
+        # Si no, devolvemos el mejor que hayamos encontrado
+        return best_color
     
     def _is_neutral_color(self, hex_color):
         """Determina si un color es neutro (blanco, negro, gris)"""
@@ -256,3 +372,37 @@ class ColorExtractor:
         except:
             # En caso de error, consideramos que no es neutro
             return False
+    
+    def _is_light_color(self, hex_color):
+        """Determina si un color es claro (para fondos)"""
+        try:
+            hex_color = hex_color.lstrip('#')
+            r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+            
+            # Fórmula de luminosidad perceptual
+            luminance = 0.299 * r + 0.587 * g + 0.114 * b
+            
+            # Consideramos claro si luminancia > 70% (de 255)
+            return luminance > 180
+        except:
+            return False
+    
+    def _is_too_dark(self, hex_color):
+        """Determina si un color es demasiado oscuro para ser fondo"""
+        try:
+            hex_color = hex_color.lstrip('#')
+            r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+            
+            # Fórmula de luminosidad perceptual
+            luminance = 0.299 * r + 0.587 * g + 0.114 * b
+            
+            # Consideramos demasiado oscuro si luminancia < 25% (de 255)
+            return luminance < 64
+        except:
+            return True
+
+# Función auxiliar para conversión
+def hex_to_rgb(hex_color):
+    """Convierte color hexadecimal a RGB (0-1)"""
+    h = hex_color.lstrip('#')
+    return tuple(int(h[i:i+2], 16)/255 for i in (0, 2, 4))

@@ -23,22 +23,24 @@ class SimpleLogbook:
         return self.data.get(key, [])
 
 class ColorPaletteGA:
-    def __init__(self, base_color, wcag_level="AA", population_size=50, generations=30, 
-                 mutation_prob=0.15, accessibility_weight=0.7):
+    def __init__(self, initial_colors, wcag_level="AA", population_size=50, generations=30, 
+                 mutation_prob=0.15, accessibility_weight=0.7, initial_weight=0.3):
         """
         Inicialización del algoritmo genético para paletas de colores
         
         Args:
-            base_color: Color primario de la marca (hex)
+            initial_colors: Lista de tres colores iniciales [primario, fondo, acento] en formato hex
             wcag_level: Nivel de accesibilidad 'AA' o 'AAA'
             population_size: Tamaño de la población
             generations: Número de generaciones
             mutation_prob: Probabilidad de mutación
             accessibility_weight: Peso relativo accesibilidad vs estética (0-1)
+            initial_weight: Peso para preservar similitud con colores iniciales (0-1)
         """
-        self.base_color = base_color
-        self.base_rgb = hex_to_rgb(base_color)
-        self.base_lab = rgb_to_lab(self.base_rgb)
+        self.initial_colors = initial_colors
+        self.initial_rgbs = [hex_to_rgb(color) for color in initial_colors]
+        self.initial_labs = [rgb_to_lab(rgb) for rgb in self.initial_rgbs]
+        
         self.wcag_level = wcag_level
         self.min_contrast = 7.0 if wcag_level == "AAA" else 4.5
         self.min_population = max(5, population_size // 5)  # Al menos 5 o 20% del tamaño máximo
@@ -48,10 +50,14 @@ class ColorPaletteGA:
         self.mutation_prob = mutation_prob
         self.bit_mutation_prob = 0.2  # Probabilidad de mutación por componente
         self.accessibility_weight = accessibility_weight
+        self.initial_weight = initial_weight
         
         # Definimos límites para los valores LAB
-        self.bg_L_range = (50, 100)  # Luminosidad alta para fondos
-        self.accent_L_range = (20, 80)  # Para acentos, más rango de luminosidad
+        self.L_ranges = [
+            (20, 80),  # Rango para primario
+            (50, 100), # Luminosidad alta para fondos
+            (20, 80)   # Para acentos, más rango de luminosidad
+        ]
         self.a_b_range = (-128, 128)  # Rango completo para a y b
         
         # Resultados
@@ -59,74 +65,123 @@ class ColorPaletteGA:
         self.logbook = SimpleLogbook()
         
     def initialize_population(self):
-        """Inicializa la población con valores aleatorios en espacios LAB apropiados"""
+        """Inicializa la población de paletas basadas en los colores iniciales"""
         population = []
         
-        for _ in range(self.population_size):
-            # Generamos componentes LAB para fondo
-            bg_L = random.uniform(*self.bg_L_range)
-            bg_a = random.uniform(*self.a_b_range)
-            bg_b = random.uniform(*self.a_b_range)
+        # Incluir la paleta original como parte de la población inicial
+        initial_palette = []
+        for lab in self.initial_labs:
+            initial_palette.extend([lab[0], lab[1], lab[2]])
+        population.append(initial_palette)
+        
+        # Generar el resto de la población con variaciones de los colores iniciales
+        for _ in range(self.population_size - 1):
+            palette = []
+            for i, initial_lab in enumerate(self.initial_labs):
+                # Variación aleatoria basada en el color inicial
+                L_range = self.L_ranges[i]
+                
+                # Variación de L con sesgo hacia el valor original
+                L = initial_lab[0] + random.gauss(0, 10)
+                L = max(L_range[0], min(L_range[1], L))
+                
+                # Variación de a y b
+                a = initial_lab[1] + random.gauss(0, 15)
+                a = max(self.a_b_range[0], min(self.a_b_range[1], a))
+                
+                b = initial_lab[2] + random.gauss(0, 15)
+                b = max(self.a_b_range[0], min(self.a_b_range[1], b))
+                
+                palette.extend([L, a, b])
             
-            # Generamos componentes LAB para acento
-            accent_L = random.uniform(*self.accent_L_range)
-            accent_a = random.uniform(*self.a_b_range)
-            accent_b = random.uniform(*self.a_b_range)
-            
-            # Creamos el individuo
-            individual = [bg_L, bg_a, bg_b, accent_L, accent_a, accent_b]
-            population.append(individual)
+            population.append(palette)
             
         return population
     
     def fitness(self, individual):
-        """Evalúa un individuo según criterios de accesibilidad y estética"""
-        # Extraer componentes LAB
-        bg_lab = tuple(individual[0:3])
-        accent_lab = tuple(individual[3:6])
+        """Evalúa la aptitud de una paleta completa"""
+        # Extraer componentes LAB de los tres colores
+        primary_lab = tuple(individual[0:3])
+        bg_lab = tuple(individual[3:6])
+        accent_lab = tuple(individual[6:9])
         
         # Convertir a RGB para cálculos de contraste
         try:
+            primary_rgb = lab_to_rgb(primary_lab)
             bg_rgb = lab_to_rgb(bg_lab)
             accent_rgb = lab_to_rgb(accent_lab)
         except:
             # Si la conversión falla (fuera de gamut), penalizar
             return 0.0
         
-        # 1. Evaluar contraste WCAG
-        contrast = contrast_ratio(bg_rgb, accent_rgb)
-        contrast_score = min(contrast / self.min_contrast, 1.0)
+        # 1. Evaluar contraste entre colores
+        contrasts = [
+            contrast_ratio(primary_rgb, bg_rgb),
+            contrast_ratio(primary_rgb, accent_rgb),
+            contrast_ratio(bg_rgb, accent_rgb)
+        ]
         
-        if contrast < self.min_contrast:
-            contrast_penalty = (contrast / self.min_contrast) ** 2
+        # Necesitamos que al menos dos contrastes cumplan con el mínimo
+        contrast_scores = [min(c / self.min_contrast, 1.0) for c in contrasts]
+        avg_contrast_score = sum(contrast_scores) / len(contrast_scores)
+        
+        # Contar cuántos pares tienen buen contraste
+        good_contrasts = sum(1 for c in contrasts if c >= self.min_contrast)
+        
+        # Fuerte penalización si no hay al menos dos buenos contrastes
+        if good_contrasts < 2:
+            contrast_penalty = 0.5
         else:
             contrast_penalty = 1.0
         
-        # 2. Evaluar fidelidad al color de marca
-        delta_e = get_delta_e(accent_lab, self.base_lab)
-        fidelity_score = max(0, 1.0 - (delta_e / 30.0))
+        # 2. Evaluar fidelidad a los colores iniciales
+        fidelity_scores = []
+        for i, color_lab in enumerate([primary_lab, bg_lab, accent_lab]):
+            initial_lab = self.initial_labs[i]
+            delta_e = get_delta_e(color_lab, initial_lab)
+            fidelity_score = max(0, 1.0 - (delta_e / 30.0))
+            fidelity_scores.append(fidelity_score)
+        
+        avg_fidelity_score = sum(fidelity_scores) / len(fidelity_scores)
         
         # 3. Evaluar legibilidad con daltonismo
-        cb_results = evaluate_color_blindness(bg_rgb, accent_rgb)
         cb_scores = []
+        for i in range(len(contrasts)):
+            rgb1, rgb2 = [(primary_rgb, bg_rgb), (primary_rgb, accent_rgb), (bg_rgb, accent_rgb)][i]
+            cb_results = evaluate_color_blindness(rgb1, rgb2)
+            
+            for cb_type, cb_contrast in cb_results.items():
+                cb_scores.append(min(cb_contrast / self.min_contrast, 1.0))
         
-        for cb_type, cb_contrast in cb_results.items():
-            cb_scores.append(min(cb_contrast / self.min_contrast, 1.0))
+        avg_cb_score = sum(cb_scores) / len(cb_scores)
         
-        cb_score = sum(cb_scores) / len(cb_scores)
+        # 4. Evaluar armonía de colores (distancia perceptual balanceada)
+        harmony_score = 1.0
         
-        # 4. Penalizar colores muy saturados para fondos
-        saturation_penalty = 1.0
-        bg_saturation = np.sqrt(bg_lab[1]**2 + bg_lab[2]**2)
-        if bg_saturation > 25:
-            saturation_penalty = max(0.5, 1.0 - (bg_saturation - 25) / 75)
+        # Queremos que los colores tengan buena separación pero no excesiva
+        for i in range(len(contrasts)):
+            color1_lab, color2_lab = [(primary_lab, bg_lab), (primary_lab, accent_lab), (bg_lab, accent_lab)][i]
+            delta_e = get_delta_e(color1_lab, color2_lab)
+            
+            # Penalizar colores muy cercanos o extremadamente distantes
+            # Ideal: entre 25 y 80
+            if delta_e < 15:
+                harmony_factor = delta_e / 15
+            elif delta_e > 100:
+                harmony_factor = max(0, 1 - (delta_e - 100) / 50)
+            else:
+                harmony_factor = 1.0
+            
+            harmony_score *= harmony_factor
         
         # Puntuación final
-        accessibility_score = (contrast_score * 0.7 + cb_score * 0.3) * contrast_penalty * saturation_penalty
-        aesthetic_score = fidelity_score
+        accessibility_score = (avg_contrast_score * 0.6 + avg_cb_score * 0.4) * contrast_penalty
+        aesthetic_score = (avg_fidelity_score * 0.7 + harmony_score * 0.3)
+        
+        aesthetic_score = (avg_fidelity_score * 0.7 + harmony_score * 0.3) * (1 + self.initial_weight)
         
         final_score = (accessibility_score * self.accessibility_weight + 
-                      aesthetic_score * (1 - self.accessibility_weight))
+               aesthetic_score * (1 - self.accessibility_weight))
         
         return final_score
     
@@ -187,6 +242,13 @@ class ColorPaletteGA:
                 
                 # Para cada componente
                 for i in range(len(parent1)):
+                    # Determinar el rango apropiado para este componente
+                    if i % 3 == 0:  # Componente L
+                        color_idx = i // 3
+                        value_range = self.L_ranges[color_idx]
+                    else:  # Componentes a y b
+                        value_range = self.a_b_range
+                    
                     # Cruce blend: mezcla usando alpha
                     gamma = (1.0 + 2.0 * alpha) * random.random() - alpha
                     
@@ -195,15 +257,8 @@ class ColorPaletteGA:
                     value2 = gamma * parent1[i] + (1.0 - gamma) * parent2[i]
                     
                     # Asegurar que están dentro de los límites
-                    if i == 0:  # bg_L
-                        value1 = max(self.bg_L_range[0], min(self.bg_L_range[1], value1))
-                        value2 = max(self.bg_L_range[0], min(self.bg_L_range[1], value2))
-                    elif i == 3:  # accent_L
-                        value1 = max(self.accent_L_range[0], min(self.accent_L_range[1], value1))
-                        value2 = max(self.accent_L_range[0], min(self.accent_L_range[1], value2))
-                    else:  # a y b
-                        value1 = max(self.a_b_range[0], min(self.a_b_range[1], value1))
-                        value2 = max(self.a_b_range[0], min(self.a_b_range[1], value2))
+                    value1 = max(value_range[0], min(value_range[1], value1))
+                    value2 = max(value_range[0], min(value_range[1], value2))
                     
                     child1.append(value1)
                     child2.append(value2)
@@ -215,23 +270,25 @@ class ColorPaletteGA:
         
         return new_population, len(pairs)
     
-    def _mutate_color_palette(self, individual, indpb):
-        """Operador de mutación personalizado, compatible con la interfaz original"""
+    def _mutate_palette(self, individual, indpb):
+        """Operador de mutación para paleta completa"""
         mutated = individual[:]
         individual_mutated = False
         
         for i in range(len(individual)):
             if random.random() < indpb:
+                # Determinar el rango apropiado para este componente
                 if i % 3 == 0:  # Componente L
-                    if i == 0:  # Fondo: más claro
-                        mutated[i] += random.gauss(0, 5)
-                        mutated[i] = max(self.bg_L_range[0], min(self.bg_L_range[1], mutated[i]))
-                    else:  # Acento: cualquier luminosidad
-                        mutated[i] += random.gauss(0, 10)
-                        mutated[i] = max(self.accent_L_range[0], min(self.accent_L_range[1], mutated[i]))
+                    color_idx = i // 3
+                    value_range = self.L_ranges[color_idx]
+                    # Mutación gaussiana con desviación estándar basada en el rango
+                    std_dev = (value_range[1] - value_range[0]) / 10
+                    mutated[i] += random.gauss(0, std_dev)
+                    mutated[i] = max(value_range[0], min(value_range[1], mutated[i]))
                 else:  # Componentes a y b
-                    mutated[i] += random.gauss(0, 8)
+                    mutated[i] += random.gauss(0, 10)  # Mayor variación en color
                     mutated[i] = max(self.a_b_range[0], min(self.a_b_range[1], mutated[i]))
+                
                 individual_mutated = True
         
         return (mutated,)
@@ -327,7 +384,7 @@ class ColorPaletteGA:
             mutated_offspring = []
             for ind in offspring:
                 if random.random() <= self.mutation_prob:
-                    mutated = self._mutate_color_palette(ind, 0.2)[0]
+                    mutated = self._mutate_palette(ind, 0.4)[0]
                     mutated_offspring.append(mutated)
                 else:
                     mutated_offspring.append(ind)
@@ -359,30 +416,61 @@ class ColorPaletteGA:
         
         palettes = []
         for ind in top_individuals:
-            # Convertir a formatos utilizables
-            bg_lab = tuple(ind[0:3])
-            accent_lab = tuple(ind[3:6])
+            # Extraer los tres colores
+            colors_lab = [
+                tuple(ind[0:3]),    # Color primario
+                tuple(ind[3:6]),    # Color de fondo
+                tuple(ind[6:9])     # Color de acento
+            ]
             
             try:
-                bg_rgb = lab_to_rgb(bg_lab)
-                accent_rgb = lab_to_rgb(accent_lab)
-                
-                bg_hex = rgb_to_hex(bg_rgb)
-                accent_hex = rgb_to_hex(accent_rgb)
+                # Convertir a RGB y HEX
+                colors_rgb = [lab_to_rgb(lab) for lab in colors_lab]
+                colors_hex = [rgb_to_hex(rgb) for rgb in colors_rgb]
                 
                 # Calcular métricas
-                contrast = contrast_ratio(bg_rgb, accent_rgb)
-                delta_e = get_delta_e(accent_lab, self.base_lab)
+                contrasts = [
+                    contrast_ratio(colors_rgb[0], colors_rgb[1]),  # Primario vs Fondo
+                    contrast_ratio(colors_rgb[0], colors_rgb[2]),  # Primario vs Acento
+                    contrast_ratio(colors_rgb[1], colors_rgb[2])   # Fondo vs Acento
+                ]
                 
-                # Evaluar con daltonismo
-                cb_results = evaluate_color_blindness(bg_rgb, accent_rgb)
-                cb_valid = sum(1 for c in cb_results.values() if c >= self.min_contrast)
-                cb_percent = (cb_valid / len(cb_results)) * 100
+                # Promedio de contraste
+                avg_contrast = sum(contrasts) / len(contrasts)
+                
+                # Delta-E respecto a colores originales (promedio)
+                delta_es = [get_delta_e(colors_lab[i], self.initial_labs[i]) for i in range(3)]
+                avg_delta_e = sum(delta_es) / len(delta_es)
+                
+                # Evaluación con daltonismo (promedio)
+                cb_results = {}
+                for i in range(len(contrasts)):
+                    rgb1, rgb2 = [(colors_rgb[0], colors_rgb[1]), 
+                                  (colors_rgb[0], colors_rgb[2]), 
+                                  (colors_rgb[1], colors_rgb[2])][i]
+                    cb = evaluate_color_blindness(rgb1, rgb2)
+                    
+                    for cb_type, cb_contrast in cb.items():
+                        if cb_type not in cb_results:
+                            cb_results[cb_type] = []
+                        cb_results[cb_type].append(cb_contrast)
+                
+                # Porcentaje de combinaciones que cumplen con el contraste mínimo para daltónicos
+                cb_valid_count = 0
+                cb_total = 0
+                
+                for cb_type, cb_contrasts in cb_results.items():
+                    for contrast in cb_contrasts:
+                        cb_total += 1
+                        if contrast >= self.min_contrast:
+                            cb_valid_count += 1
+                
+                cb_percent = (cb_valid_count / cb_total * 100) if cb_total > 0 else 0
                 
                 palettes.append({
-                    "colors": [self.base_color, bg_hex, accent_hex],
-                    "contrast": f"{contrast:.1f}:1",
-                    "delta_e": f"{delta_e:.1f}",
+                    "colors": colors_hex,
+                    "contrast": f"{avg_contrast:.2f}:1",
+                    "delta_e": f"{avg_delta_e:.2f}",
                     "daltonism": f"{cb_percent:.0f}% válido"
                 })
             except:

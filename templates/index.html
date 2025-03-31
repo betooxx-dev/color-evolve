@@ -4,359 +4,405 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ColorEvolve - Generador de Paletas Accesibles</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/styles.css') }}"
-    />
+    
+    <!-- Fuente Inter de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles-modern.css') }}" />
+    <style>
+      body, html {
+        height: 100%;
+        margin: 0;
+        overflow-x: hidden;
+      }
+      
+      .app-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+      }
+      
+      .sidebar {
+        width: 320px;
+        overflow-y: auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-right: 1px solid #e9ecef;
+      }
+      
+      .content-area {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+      }
+      
+      .color-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+      }
+      
+      .preview-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      
+      .controls-section, .evolution-params {
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      }
+      
+      .result-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .color-swatch-large {
+        height: 80px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      
+      .color-swatch-large:hover {
+        transform: translateY(-5px);
+      }
+      
+      @media (max-width: 992px) {
+        .main-content {
+          flex-direction: column;
+        }
+        
+        .sidebar {
+          width: 100%;
+          border-right: none;
+          border-bottom: 1px solid #e9ecef;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div class="container py-4">
-      <header class="mb-4 text-center">
-        <h1>ColorEvolve</h1>
-        <p class="lead">Generador evolutivo de paletas de colores accesibles</p>
-      </header>
-
-      <div class="row">
-        <!-- Panel de configuración -->
-        <div class="col-md-4">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h5 class="mb-0">Configuración</h5>
+    <div class="app-container">
+      <!-- Header elegante y minimalista -->
+      <header class="bg-white py-3 border-bottom">
+        <div class="container-fluid px-4">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+              <div class="me-3 position-relative">
+                <div class="position-absolute" style="width: 40px; height: 40px; background-color: var(--primary-color); opacity: 0.1; border-radius: 50%; top: -5px; left: -5px; z-index: -1;"></div>
+                <h1 class="h3 m-0">ColorEvolve</h1>
+              </div>
+              <p class="text-muted mb-0 d-none d-md-block">Generador evolutivo de paletas de colores accesibles</p>
             </div>
-            <div class="card-body">
-              <form id="generate-form">
-                <div class="mb-3">
-                  <label for="base-color" class="form-label"
-                    >Color primario de marca:</label
-                  >
-                  <ul class="nav nav-tabs" id="colorSourceTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                      <button
-                        class="nav-link active"
-                        id="manual-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#manual"
-                        type="button"
-                        role="tab"
-                        aria-controls="manual"
-                        aria-selected="true"
-                      >
-                        Manual
-                      </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                      <button
-                        class="nav-link"
-                        id="url-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#url"
-                        type="button"
-                        role="tab"
-                        aria-controls="url"
-                        aria-selected="false"
-                      >
-                        URL
-                      </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                      <button
-                        class="nav-link"
-                        id="html-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#html"
-                        type="button"
-                        role="tab"
-                        aria-controls="html"
-                        aria-selected="false"
-                      >
-                        HTML
-                      </button>
-                    </li>
-                  </ul>
-
-                  <div class="tab-content mt-2" id="colorSourceContent">
-                    <!-- Selección manual de color -->
-                    <div
-                      class="tab-pane fade show active"
-                      id="manual"
-                      role="tabpanel"
-                      aria-labelledby="manual-tab"
-                    >
-                      <div class="input-group">
-                        <input
-                          type="color"
-                          class="form-control form-control-color"
-                          id="base-color"
-                          name="base_color"
-                          value="#3A5FCD"
-                        />
-                        <input
-                          type="text"
-                          class="form-control"
-                          id="hex-value"
-                          value="#3A5FCD"
-                        />
-                      </div>
-                    </div>
-
-                    <!-- Extracción desde URL -->
-                    <div
-                      class="tab-pane fade"
-                      id="url"
-                      role="tabpanel"
-                      aria-labelledby="url-tab"
-                    >
-                      <div class="mb-2">
-                        <input
-                          type="url"
-                          class="form-control"
-                          id="site-url"
-                          placeholder="https://example.com"
-                        />
-                      </div>
-                      <div class="d-flex align-items-center">
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-secondary"
-                          id="extract-from-url"
-                        >
-                          <span
-                            class="spinner-border spinner-border-sm d-none"
-                            id="url-spinner"
-                            role="status"
-                            aria-hidden="true"
-                          ></span>
-                          Extraer color
-                        </button>
-                        <div class="ms-2" id="url-result-preview">
-                          <!-- Aquí se mostrará el color extraído -->
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Extracción desde HTML -->
-                    <div
-                      class="tab-pane fade"
-                      id="html"
-                      role="tabpanel"
-                      aria-labelledby="html-tab"
-                    >
-                      <div class="mb-2">
-                        <textarea
-                          class="form-control"
-                          id="html-code"
-                          rows="3"
-                          placeholder="<html>...</html>"
-                        ></textarea>
-                      </div>
-                      <div class="d-flex align-items-center">
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-secondary"
-                          id="extract-from-html"
-                        >
-                          <span
-                            class="spinner-border spinner-border-sm d-none"
-                            id="html-spinner"
-                            role="status"
-                            aria-hidden="true"
-                          ></span>
-                          Extraer color
-                        </button>
-                        <div class="ms-2" id="html-result-preview">
-                          <!-- Aquí se mostrará el color extraído -->
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label class="form-label">Nivel de accesibilidad WCAG:</label>
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      name="wcag_level"
-                      id="wcag-aa"
-                      value="AA"
-                      checked
-                    />
-                    <label class="form-check-label" for="wcag-aa">
-                      AA (Contraste ≥ 4.5:1)
-                    </label>
-                  </div>
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      name="wcag_level"
-                      id="wcag-aaa"
-                      value="AAA"
-                    />
-                    <label class="form-check-label" for="wcag-aaa">
-                      AAA (Contraste ≥ 7:1)
-                    </label>
-                  </div>
-                </div>
-
-                <hr />
-                <h6>Parámetros de evolución</h6>
-
-                <div class="mb-3">
-                  <label for="population-size" class="form-label"
-                    >Tamaño de población:</label
-                  >
-                  <input
-                    type="range"
-                    class="form-range"
-                    id="population-size"
-                    name="population_size"
-                    min="20"
-                    max="100"
-                    value="50"
-                  />
-                  <div class="text-end">
-                    <span id="population-value">50</span> individuos
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="generations" class="form-label"
-                    >Número de generaciones:</label
-                  >
-                  <input
-                    type="range"
-                    class="form-range"
-                    id="generations"
-                    name="generations"
-                    min="10"
-                    max="50"
-                    value="20"
-                  />
-                  <div class="text-end">
-                    <span id="generations-value">20</span> generaciones
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="mutation-prob" class="form-label"
-                    >Probabilidad de mutación:</label
-                  >
-                  <input
-                    type="range"
-                    class="form-range"
-                    id="mutation-prob"
-                    name="mutation_prob"
-                    min="5"
-                    max="30"
-                    value="15"
-                  />
-                  <div class="text-end">
-                    <span id="mutation-value">15</span>%
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="accessibility-weight" class="form-label"
-                    >Balance accesibilidad/estética:</label
-                  >
-                  <input
-                    type="range"
-                    class="form-range"
-                    id="accessibility-weight"
-                    name="accessibility_weight"
-                    min="50"
-                    max="90"
-                    value="70"
-                  />
-                  <div class="text-end">
-                    <span id="access-value">70</span>% /
-                    <span id="aesthetic-value">30</span>%
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  class="btn btn-primary w-100 mt-3"
-                  id="generate-btn"
-                >
-                  Generar paletas
-                </button>
-              </form>
+            <div class="d-flex gap-2">
+              <span class="badge bg-primary rounded-pill px-3 py-2">WCAG AA/AAA</span>
+              <span class="badge bg-secondary rounded-pill px-3 py-2 d-none d-md-inline">Algoritmo Genético</span>
             </div>
           </div>
         </div>
-
-        <!-- Panel de resultados -->
-        <div class="col-md-8">
-          <div id="results-container" style="display: none">
-            <div class="card mb-4">
-              <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Mejores paletas generadas</h5>
+      </header>
+    
+      <!-- Contenido principal con diseño de dos columnas -->
+      <div class="main-content">
+        <!-- Barra lateral con controles -->
+        <aside class="sidebar">
+          <form id="generate-form">
+            <!-- Sección de colores iniciales -->
+            <div class="controls-section">
+              <h5 class="mb-3">Colores iniciales</h5>
+              
+              <!-- Selector de color primario -->
+              <div class="mb-2">
+                <label for="primary-color" class="form-label">Color primario:</label>
+                <div class="input-group">
+                  <input type="color" class="form-control form-control-color" id="primary-color" name="primary_color" value="#3A5FCD" />
+                  <input type="text" class="form-control" id="primary-hex-value" value="#3A5FCD" />
+                </div>
               </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-hover" id="palettes-table">
-                    <thead>
-                      <tr>
-                        <th width="40%">Paleta</th>
-                        <th>Contraste</th>
-                        <th>Delta-E</th>
-                        <th>Daltonismo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <!-- Se llenará con JavaScript -->
-                    </tbody>
-                  </table>
+              
+              <!-- Selector de color de fondo -->
+              <div class="mb-2">
+                <label for="bg-color" class="form-label">Color de fondo:</label>
+                <div class="input-group">
+                  <input type="color" class="form-control form-control-color" id="bg-color" name="bg_color" value="#FFFFFF" />
+                  <input type="text" class="form-control" id="bg-hex-value" value="#FFFFFF" />
+                </div>
+              </div>
+              
+              <!-- Selector de color de acento -->
+              <div class="mb-2">
+                <label for="accent-color" class="form-label">Color de acento:</label>
+                <div class="input-group">
+                  <input type="color" class="form-control form-control-color" id="accent-color" name="accent_color" value="#F08080" />
+                  <input type="text" class="form-control" id="accent-hex-value" value="#F08080" />
+                </div>
+              </div>
+              
+              <div class="mt-3">
+                <button type="button" class="btn btn-sm btn-secondary w-100" id="extract-colors-btn" data-bs-toggle="modal" data-bs-target="#extractColorsModal">
+                  <i class="bi bi-eyedropper me-1"></i> Extraer colores
+                </button>
+              </div>
+            </div>
+            
+            <!-- Nivel de accesibilidad -->
+            <div class="controls-section">
+              <h5 class="mb-3">Accesibilidad</h5>
+              
+              <div class="mb-3">
+                <label class="form-label">Nivel WCAG:</label>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="wcag_level" id="wcag-aa" value="AA" checked />
+                  <label class="form-check-label" for="wcag-aa">AA (Contraste ≥ 4.5:1)</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="wcag_level" id="wcag-aaa" value="AAA" />
+                  <label class="form-check-label" for="wcag-aaa">AAA (Contraste ≥ 7:1)</label>
+                </div>
+              </div>
+              
+              <!-- Slider para balancear accesibilidad y estética -->
+              <div class="mb-3">
+                <label for="accessibility-weight" class="form-label">Balance accesibilidad/estética:</label>
+                <input type="range" class="form-range" id="accessibility-weight" name="accessibility_weight" min="50" max="90" value="70" />
+                <div class="d-flex justify-content-between text-muted small">
+                  <span>Estética</span>
+                  <span><span id="access-value">70</span>% / <span id="aesthetic-value">30</span>%</span>
+                  <span>Accesibilidad</span>
+                </div>
+              </div>
+              
+              <!-- Slider para fidelidad a colores iniciales -->
+              <div class="mb-2">
+                <label for="initial-weight" class="form-label">Fidelidad a colores iniciales:</label>
+                <input type="range" class="form-range" id="initial-weight" name="initial_weight" min="0" max="60" value="30" />
+                <div class="text-end small text-muted">
+                  <span id="initial-weight-value">30</span>%
                 </div>
               </div>
             </div>
-
-            <div class="card mb-4">
-              <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Previsualización</h5>
-              </div>
-              <div class="card-body p-0">
-                <div id="palette-preview" class="palette-preview">
-                  <!-- Se llenará con JavaScript -->
+            
+            <!-- Parámetros de evolución -->
+            <div class="evolution-params">
+              <h5 class="mb-3">Parámetros de evolución</h5>
+              
+              <div class="mb-3">
+                <label for="population-size" class="form-label">Tamaño de población:</label>
+                <input type="range" class="form-range" id="population-size" name="population_size" min="20" max="100" value="50" />
+                <div class="text-end small text-muted">
+                  <span id="population-value">50</span> individuos
                 </div>
               </div>
-            </div>
-
-            <div class="card">
-              <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0">Evolución del algoritmo</h5>
+              
+              <div class="mb-3">
+                <label for="generations" class="form-label">Generaciones:</label>
+                <input type="range" class="form-range" id="generations" name="generations" min="10" max="50" value="20" />
+                <div class="text-end small text-muted">
+                  <span id="generations-value">20</span>
+                </div>
               </div>
-              <div class="card-body">
-                <img
-                  id="convergence-chart"
-                  class="img-fluid"
-                  src=""
-                  alt="Gráfico de convergencia"
-                />
+              
+              <div class="mb-3">
+                <label for="mutation-prob" class="form-label">Probabilidad de mutación:</label>
+                <input type="range" class="form-range" id="mutation-prob" name="mutation_prob" min="5" max="30" value="15" />
+                <div class="text-end small text-muted">
+                  <span id="mutation-value">15</span>%
+                </div>
               </div>
+              
+              <button type="submit" class="btn btn-primary w-100 mt-3" id="generate-btn">
+                Generar paletas optimizadas
+              </button>
             </div>
-          </div>
-
+          </form>
+        </aside>
+        
+        <!-- Área principal de contenido -->
+        <main class="content-area">
+          <!-- Indicador de carga -->
           <div id="loading" class="text-center my-5 py-5" style="display: none">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Generando paletas...</span>
             </div>
-            <p class="mt-3">
-              Generando paletas accesibles mediante algoritmo genético...
-            </p>
+            <p class="mt-3">Optimizando paletas mediante algoritmo genético...</p>
+          </div>
+          
+          <!-- Contenedor de resultados -->
+          <div id="results-container" style="display: none">
+            <!-- Rejilla de colores -->
+            <div class="mb-4">
+              <h4 class="mb-3">Paletas optimizadas</h4>
+              <div class="color-grid mb-4">
+                <!-- Paleta inicial -->
+                <div class="card result-card">
+                  <div class="card-header d-flex align-items-center">
+                    <span class="badge bg-secondary me-2" style="width: 8px; height: 8px; border-radius: 50%; padding: 0;"></span>
+                    <h6 class="mb-0">Paleta inicial</h6>
+                  </div>
+                  <div class="card-body">
+                    <div id="initial-palette">
+                      <!-- Se llenará con JavaScript -->
+                    </div>
+                    <div class="mt-3 text-center">
+                      <span class="badge bg-light text-dark">Sin optimizar</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Paletas generadas (se llenarán dinámicamente) -->
+                <div class="palette-cards">
+                  <!-- Se llenará con JavaScript -->
+                </div>
+              </div>
+              
+              <!-- Tabla detallada de paletas -->
+              <div class="card mb-4">
+                <div class="card-header d-flex align-items-center">
+                  <span class="badge bg-success me-2" style="width: 8px; height: 8px; border-radius: 50%; padding: 0;"></span>
+                  <h5 class="mb-0">Métricas detalladas</h5>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover" id="palettes-table">
+                      <thead>
+                        <tr>
+                          <th width="40%">Paleta</th>
+                          <th>Contraste</th>
+                          <th>Delta-E</th>
+                          <th>Daltonismo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- Se llenará con JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Previsualización y métricas de evolución -->
+            <div class="row">
+              <!-- Previsualización -->
+              <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                  <div class="card-header d-flex align-items-center">
+                    <span class="badge bg-info me-2" style="width: 8px; height: 8px; border-radius: 50%; padding: 0;"></span>
+                    <h5 class="mb-0">Previsualización</h5>
+                  </div>
+                  <div class="card-body p-0">
+                    <div id="palette-preview" class="palette-preview">
+                      <!-- Se llenará con JavaScript -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Gráfico de evolución -->
+              <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                  <div class="card-header d-flex align-items-center">
+                    <span class="badge bg-primary me-2" style="width: 8px; height: 8px; border-radius: 50%; padding: 0;"></span>
+                    <h5 class="mb-0">Evolución del algoritmo</h5>
+                  </div>
+                  <div class="card-body">
+                    <img id="convergence-chart" class="img-fluid rounded" src="" alt="Gráfico de convergencia" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    
+    <!-- Modal para extracción de colores -->
+    <div class="modal fade" id="extractColorsModal" tabindex="-1" aria-labelledby="extractColorsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="extractColorsModalLabel">Extraer colores</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <ul class="nav nav-tabs" id="colorSourceTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="url-tab" data-bs-toggle="tab" data-bs-target="#url" type="button" role="tab" aria-controls="url" aria-selected="true">
+                  URL
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="html-tab" data-bs-toggle="tab" data-bs-target="#html" type="button" role="tab" aria-controls="html" aria-selected="false">
+                  HTML
+                </button>
+              </li>
+            </ul>
+            
+            <div class="tab-content mt-3" id="colorSourceContent">
+              <!-- Extracción desde URL -->
+              <div class="tab-pane fade show active" id="url" role="tabpanel" aria-labelledby="url-tab">
+                <div class="mb-2">
+                  <input type="url" class="form-control" id="site-url" placeholder="https://example.com" />
+                </div>
+                <div class="d-flex align-items-center">
+                  <button type="button" class="btn btn-sm btn-secondary" id="extract-from-url">
+                    <span class="spinner-border spinner-border-sm d-none" id="url-spinner" role="status" aria-hidden="true"></span>
+                    Extraer colores
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Extracción desde HTML -->
+              <div class="tab-pane fade" id="html" role="tabpanel" aria-labelledby="html-tab">
+                <div class="mb-2">
+                  <textarea class="form-control" id="html-code" rows="5" placeholder="<html>...</html>"></textarea>
+                </div>
+                <div class="d-flex align-items-center">
+                  <button type="button" class="btn btn-sm btn-secondary" id="extract-from-html">
+                    <span class="spinner-border spinner-border-sm d-none" id="html-spinner" role="status" aria-hidden="true"></span>
+                    Extraer colores
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Resultados de la extracción -->
+            <div class="mt-4" id="extracted-colors-container" style="display: none">
+              <h6>Colores extraídos:</h6>
+              <div class="d-flex flex-wrap gap-2 mt-2" id="extracted-colors-preview">
+                <!-- Aquí se mostrarán los colores extraídos -->
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="apply-extracted-colors" disabled>Aplicar colores</button>
           </div>
         </div>
       </div>
     </div>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   </body>
 </html>
