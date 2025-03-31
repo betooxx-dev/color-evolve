@@ -2,6 +2,10 @@ import random
 import numpy as np
 from models.color_utils import hex_to_rgb, rgb_to_lab, lab_to_rgb, rgb_to_hex, get_delta_e
 from models.accessibility import contrast_ratio, evaluate_color_blindness
+import logging
+
+
+cssutils_logger = logging.getLogger('cssutils')
 
 class SimpleLogbook:
     """Clase simple para emular el comportamiento de DEAP Logbook"""
