@@ -135,10 +135,28 @@ document.addEventListener("DOMContentLoaded", function () {
     
     // Columnas informativas
     const initialLabel = document.createElement("td");
-    initialLabel.colSpan = 3;
-    initialLabel.textContent = "Paleta inicial (sin optimizar)";
+    initialLabel.textContent = "Sin optimizar";
     initialLabel.className = "text-muted";
     initialRow.appendChild(initialLabel);
+    
+    const emptyCell1 = document.createElement("td");
+    initialRow.appendChild(emptyCell1);
+    
+    const emptyCell2 = document.createElement("td");
+    initialRow.appendChild(emptyCell2);
+    
+    // Añadir botón de copiar para la paleta inicial
+    const copyCell = document.createElement("td");
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "copy-btn";
+    copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+    copyBtn.title = "Copiar colores";
+    copyBtn.addEventListener("click", function(e) {
+      e.stopPropagation(); // Evitar que se seleccione la fila al hacer clic en el botón
+      copyColorsToClipboard(initialColors);
+    });
+    copyCell.appendChild(copyBtn);
+    initialRow.appendChild(copyCell);
     
     initialRow.addEventListener("click", function() {
       const selected = palettesTable.querySelector(".table-active");
@@ -183,6 +201,19 @@ document.addEventListener("DOMContentLoaded", function () {
       const daltonismCell = document.createElement("td");
       daltonismCell.textContent = palette.daltonism;
       row.appendChild(daltonismCell);
+      
+      // Añadir botón de copiar
+      const copyCell = document.createElement("td");
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "copy-btn";
+      copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+      copyBtn.title = "Copiar colores";
+      copyBtn.addEventListener("click", function(e) {
+        e.stopPropagation(); // Evitar que se seleccione la fila al hacer clic en el botón
+        copyColorsToClipboard(palette.colors);
+      });
+      copyCell.appendChild(copyBtn);
+      row.appendChild(copyCell);
 
       // Añadir evento de clic para previsualizar
       row.addEventListener("click", function () {
@@ -296,6 +327,68 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     palettePreview.appendChild(colorsInfo);
+  }
+
+  // Función para copiar colores al portapapeles
+  function copyColorsToClipboard(colors) {
+    const colorString = colors.join(', ');
+    
+    navigator.clipboard.writeText(colorString).then(
+      function() {
+        // Mostrar mensaje de éxito
+        showToast('Colores copiados al portapapeles');
+      }, 
+      function(err) {
+        console.error('No se pudieron copiar los colores: ', err);
+        // Fallback para navegadores antiguos
+        const textarea = document.createElement('textarea');
+        textarea.value = colorString;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('Colores copiados al portapapeles');
+        } catch (err) {
+          console.error('No se pudo copiar el texto: ', err);
+        }
+        document.body.removeChild(textarea);
+      }
+    );
+  }
+
+  // Función para mostrar toast de notificación
+  function showToast(message) {
+    // Verificar si ya existe un toast container
+    let toastContainer = document.querySelector('.toast-container');
+    
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+      document.body.appendChild(toastContainer);
+    }
+    
+    const toastId = 'copy-toast-' + Date.now();
+    const toastHTML = `
+      <div id="${toastId}" class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            ${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    `;
+    
+    toastContainer.innerHTML += toastHTML;
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 2000 });
+    toast.show();
+    
+    // Eliminar el toast después de que se oculte
+    toastElement.addEventListener('hidden.bs.toast', function () {
+      toastElement.remove();
+    });
   }
 
   // Funcionalidad para extraer colores de URL o HTML

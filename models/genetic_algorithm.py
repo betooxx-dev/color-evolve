@@ -4,7 +4,6 @@ from models.color_utils import hex_to_rgb, rgb_to_lab, lab_to_rgb, rgb_to_hex, g
 from models.accessibility import contrast_ratio, evaluate_color_blindness
 import logging
 
-
 cssutils_logger = logging.getLogger('cssutils')
 
 class SimpleLogbook:
